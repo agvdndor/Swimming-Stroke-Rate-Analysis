@@ -328,3 +328,17 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+
+
+# weights
+weights/
+*.wth
+
+# pycache
+*__pycache__*
+
+# data dir
+data/
+
+# venv
+venv*/

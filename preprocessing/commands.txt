@@ -1,0 +1,6 @@
+% ffmpeg stitch 4 videos side to side
+ffmpeg -i Freestyle_-_---_-__7.avi -i Freestyle_-_---_-__8.avi -i Freestyle_-_---_-__9.avi -i Freestyle_-_---_-__10.avi -filter_complex "[0:v][1:v]hstack[t];[2:v][3:v]hstack[b];[t][b]hstack[v]" -map "[v]" -shortest -vcodec mpeg4 stitched.avi
+
+% range-detector-video.py
+% hue_max 80
+% s_max 120
