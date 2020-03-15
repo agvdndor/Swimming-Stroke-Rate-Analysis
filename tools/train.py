@@ -14,7 +14,7 @@ import sys
 
 # get root directory
 import re
-reg = '^.*/SwimPose'
+reg = '^.*/AquaPose'
 project_root = re.findall(reg, osp.dirname(osp.abspath(sys.argv[0])))[0]
 sys.path.append(project_root)
 
@@ -54,17 +54,17 @@ def main(args):
 
     # split the dataset in train and test set
     indices = torch.randperm(len(dataset)).tolist()
-    dataset_train = torch.utils.data.Subset(dataset, indices[:10])
+    dataset_train = torch.utils.data.Subset(dataset, indices[:-10])
     dataset_test = torch.utils.data.Subset(dataset, indices[-10:])
 
     # create dataloaders
     print('creating dataloaders...')
     data_loader = DataLoader(
-            dataset_train, batch_size=5, shuffle=True, num_workers=4,
+            dataset_train, batch_size=10, shuffle=True, num_workers=4,
             collate_fn=collate_fn)
 
     data_loader_test = DataLoader(
-            dataset_test, batch_size=5, shuffle=True, num_workers=4,
+            dataset_test, batch_size=10, shuffle=True, num_workers=4,
             collate_fn=collate_fn)
 
     # get device
@@ -86,12 +86,12 @@ def main(args):
     model.to(device)
     
 
-    num_epochs = 5
+    num_epochs = 10
     for epoch in tqdm(range(0,num_epochs)):
-        train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=1)
+        train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
         lr_scheduler.step()
         evaluate(model, data_loader_test, device=device)
-        torch.save(model.state_dict(), output_base_url + '_epoch{}.wth'.format(epoch))
+        torch.save(model.state_dict(), output_base_url + '_epoch{}-{}.wth'.format(epoch, num_epochs))
 
 if __name__ == '__main__':
     # TODO get args

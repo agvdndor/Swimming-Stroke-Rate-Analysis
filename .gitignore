@@ -342,3 +342,5 @@ data/
 
 # venv
 venv*/
+
+.vscode/
