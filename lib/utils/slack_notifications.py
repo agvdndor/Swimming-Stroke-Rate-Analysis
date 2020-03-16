@@ -5,7 +5,7 @@ from .secrets import oauth_acces_token, bot_user_oauth_acces_token
 # acces tokens for swimthesis.slack.com
 #post message in channel
 
-def slack_message(message, channel):
+def slack_message(message, channel='#train'):
     token = bot_user_oauth_acces_token
     sc = WebClient(token)
     sc.chat_postMessage(channel=channel, 

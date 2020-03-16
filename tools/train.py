@@ -99,7 +99,7 @@ def main(args):
     end = time.time()
 
     duration_min = (end - start)/60
-    slack_message("Done Training, took {}min".format(duration_min))
+    slack_message("Done Training, took {}min".format(duration_min), channel='#train')
     
 if __name__ == '__main__':
     # TODO get args
