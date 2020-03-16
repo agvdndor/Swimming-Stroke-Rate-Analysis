@@ -344,3 +344,5 @@ data/
 venv*/
 
 .vscode/
+
+utils/secrets.py

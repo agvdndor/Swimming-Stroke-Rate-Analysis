@@ -3,6 +3,8 @@ from os import path as osp
 from datetime import datetime
 from tqdm import tqdm
 
+import time
+
 # torch imports
 import torch
 from torchvision import transforms
@@ -19,9 +21,11 @@ project_root = re.findall(reg, osp.dirname(osp.abspath(sys.argv[0])))[0]
 sys.path.append(project_root)
 
 from lib.dataset.PoseDataset import PoseDataset
-from lib.dataset.custom_transforms import DictToTensor
 
 from lib.models.keypoint_rcnn import get_resnet50_pretrained_model
+
+# slack notifications
+from lib.utils.slack_notifications import slack_message
 
 # references import
 # source: https://github.com/pytorch/vision/tree/master/references/detection
@@ -49,7 +53,7 @@ def main(args):
 
     # create dataset
     print('loading dataset...')
-    dataset = PoseDataset([osp.join(project_root,'data/vzf/freestyle/freestyle_1')], train=True ,stride=3)
+    dataset = PoseDataset([osp.join(project_root,'data/vzf/freestyle/freestyle_1')], train=True)
 
     # split the dataset in train and test set
     indices = torch.randperm(len(dataset)).tolist()
@@ -85,13 +89,18 @@ def main(args):
     model.to(device)
     
 
+    start = time.time()
     num_epochs = 10
     for epoch in tqdm(range(0,num_epochs)):
         train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
         lr_scheduler.step()
         evaluate(model, data_loader_test, device=device)
         torch.save(model.state_dict(), output_base_url + '_epoch{}-{}.wth'.format(epoch, num_epochs))
+    end = time.time()
 
+    duration_min = (end - start)/60
+    slack_message("Done Training, took {}min".format(duration_min))
+    
 if __name__ == '__main__':
     # TODO get args
     args = None
