@@ -72,7 +72,7 @@ def main(args):
             collate_fn=collate_fn)
 
     # get device
-    device = select_best_gpu(min_mem=7000) if torch.cuda.is_available() else torch.device('cpu')
+    device = select_best_gpu(min_mem=6100) if torch.cuda.is_available() else torch.device('cpu')
     print('selected device: {}'.format(device))
 
     # only set roi_heads trainable
