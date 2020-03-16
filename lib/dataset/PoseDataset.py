@@ -195,24 +195,6 @@ class PoseDataset(Dataset):
         # TODO extend this to multiple boxes when we start doing multi person labeling
         target['keypoints'] = [keypoint_list]
 
-        # Determine orientation of swimmer and modify target appropriately
-        keypoints = target['keypoints']
-        # x_coordinate of closest shoulder and hip
-        shoulder_close_x = keypoints[0][5][0]
-        hip_close_x = keypoints[0][11][0]
-
-        if shoulder_close_x < hip_close_x:
-            direction = 'left'
-            # order of keypoints is correct
-
-        else:
-            direction = 'right'
-
-            # swap left and right joins (close = right, far = left)
-            flip_inds = [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
-            keypoints = keypoints[:, flip_inds]
-            target['keypoints'] = keypoints
-
         return target, not_annotated
 
     def draw_keypoints(self, idx):
@@ -268,12 +250,17 @@ class PoseDataset(Dataset):
         image = io.imread(img_file)
 
         # get target dict
-        target, _ = self.get_target_from_file(ann_file)
+        target, not_annotated = self.get_target_from_file(ann_file)
+
+        # correct orientation (left <-> right facing swimmer)
+        target = self.correct_orientation(target, not_annotated)
 
         # target as tensors
         target['boxes'] = torch.FloatTensor(target['boxes'])
         target['labels'] = torch.tensor(target['labels']).to(torch.int64)
         target['keypoints'] = torch.FloatTensor(target['keypoints'])
+
+        
 
         if self.transform:
             image, target = self.transform(image, target)
@@ -281,3 +268,37 @@ class PoseDataset(Dataset):
         return image, target
 
 
+    def correct_orientation(self, target, not_annotated):
+        # Determine orientation of swimmer and modify target appropriately
+        keypoints = target['keypoints']
+
+        # x_coordinate of shoulder and hip
+        shoulder_close_x = keypoints[0][5][0]
+        shoulder_close_is_annotated = True if not_annotated[5]== 0 else False
+
+        hip_close_x = keypoints[0][11][0]
+        hip_close_is_annotated = True if not_annotated[11]== 0 else False
+
+        shoulder_far_x = keypoints[0][6][0]
+        shoulder_far_is_annotated = True if not_annotated[6]== 0 else False
+
+        hip_far_x = keypoints[0][12][0]
+        hip_far_is_annotated = True if not_annotated[12]== 0 else False
+
+        # assumes at least one shoulder and at least one hip is annotated
+        valid_shoulder = shoulder_close_x if shoulder_close_is_annotated else shoulder_far_x
+        valid_hip = hip_close_x if hip_close_is_annotated else hip_far_x 
+
+        if valid_shoulder < valid_hip: 
+            direction = 'left'
+            # order of keypoints is correct
+
+        else:
+            direction = 'right'
+
+            # swap left and right joins (close = right, far = left)
+            flip_inds = [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
+            keypoints = keypoints[:, flip_inds]
+            target['keypoints'] = keypoints
+
+        return target
