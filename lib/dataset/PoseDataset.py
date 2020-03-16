@@ -1,5 +1,9 @@
 from __future__ import print_function, division
 import os
+
+import sys
+from os import path as osp
+
 import torch
 from skimage import io, transform
 import numpy as np
@@ -9,9 +13,19 @@ from torchvision import transforms, utils
 from glob import glob
 import json
 
+# get root directory
+import re
+reg = '^.*/AquaPose'
+project_root = re.findall(reg, osp.dirname(osp.abspath(sys.argv[0])))[0]
+sys.path.append(project_root)
+
+# references import
+# source: https://github.com/pytorch/vision/tree/master/references/detection
+from references.transforms import RandomHorizontalFlip, ToTensor, Compose
+
 class PoseDataset(Dataset):
     
-    def __init__(self, dataset_list, stride, transform=None):
+    def __init__(self, dataset_list, train=True, stride=3):
         '''
         dataset_list = contains all relevant datasets with subfolders ann and img as produced by supervise.ly
         stride = how densely the images are annotated, one every stride is annotated
@@ -69,10 +83,17 @@ class PoseDataset(Dataset):
                 if PoseDataset.is_annotated(ann_file):
                     ann_list += [ann_file]
         self.ann_list = ann_list
-        self.transform = transform
+        self.train = train
+        self.transform = self.get_transforms()
 
     def __len__(self):
         return len(self.ann_list)
+
+    def get_transforms(self):
+        if self.train:
+            return Compose([ToTensor(), RandomHorizontalFlip(0.5)])
+        else:
+            return Compose([ToTensor()])
     
     @staticmethod
     def is_annotated(ann_file):
@@ -230,12 +251,14 @@ class PoseDataset(Dataset):
         # get target dict
         target, _ = self.get_target_from_file(ann_file)
 
-        sample = {'image': image,
-                  'target': target}
+        # target as tensors
+        target['boxes'] = torch.FloatTensor(target['boxes'])
+        target['labels'] = torch.tensor(target['labels']).to(torch.int64)
+        target['keypoints'] = torch.FloatTensor(target['keypoints'])
 
         if self.transform:
-            sample = self.transform(sample)
+            image, target = self.transform(image, target)
 
-        return sample['image'], sample['target']
+        return image, target
 
 

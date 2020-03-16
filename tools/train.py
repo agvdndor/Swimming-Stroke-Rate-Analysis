@@ -49,8 +49,7 @@ def main(args):
 
     # create dataset
     print('loading dataset...')
-    transform = transforms.Compose([DictToTensor()])
-    dataset = PoseDataset([osp.join(project_root,'data/vzf/freestyle/freestyle_1')], 3, transform=transform)
+    dataset = PoseDataset([osp.join(project_root,'data/vzf/freestyle/freestyle_1')], train=True ,stride=3)
 
     # split the dataset in train and test set
     indices = torch.randperm(len(dataset)).tolist()

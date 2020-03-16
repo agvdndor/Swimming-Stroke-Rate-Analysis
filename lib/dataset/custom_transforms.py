@@ -12,8 +12,7 @@ class DictToTensor(object):
     def __init__(self):
         self.toTensor = transforms.ToTensor()
 
-    def __call__(self, sample):
-        image, target = sample['image'], sample['target']
+    def __call__(self, image, target):
 
         # swap color axis because
         # numpy image: H x W x C
@@ -25,14 +24,13 @@ class DictToTensor(object):
         target['labels'] = torch.tensor(target['labels']).to(torch.int64)
         target['keypoints'] = torch.FloatTensor(target['keypoints'])
 
-        return {'image': image,
-                'target': target}
+        return image, target
 
 class DictNormalize(object):
     def __init__(self, mean, std):
         self.normalize = transforms.Normalize(mean=mean, std=std)
 
-    def __call__(self, sample):
+    def __call__(self, sample, target):
         sample['image'] = self.normalize(sample['image'])
 
         return sample

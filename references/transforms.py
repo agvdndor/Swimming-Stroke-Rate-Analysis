@@ -3,7 +3,6 @@ import torch
 
 from torchvision.transforms import functional as F
 
-
 def _flip_coco_person_keypoints(kps, width):
     flip_inds = [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
     flipped_data = kps[:, flip_inds]
@@ -25,22 +24,25 @@ class Compose(object):
 
 
 class RandomHorizontalFlip(object):
-    def __init__(self, prob):
+    def __init__(self, prob=0.5):
         self.prob = prob
 
     def __call__(self, image, target):
-        if random.random() < self.prob:
-            height, width = image.shape[-2:]
-            image = image.flip(-1)
-            bbox = target["boxes"]
-            bbox[:, [0, 2]] = width - bbox[:, [2, 0]]
-            target["boxes"] = bbox
-            if "masks" in target:
-                target["masks"] = target["masks"].flip(-1)
-            if "keypoints" in target:
-                keypoints = target["keypoints"]
-                keypoints = _flip_coco_person_keypoints(keypoints, width)
-                target["keypoints"] = keypoints
+        try:
+            if random.random() < self.prob:
+                height, width = image.shape[-2:]
+                image = image.flip(-1)
+                bbox = target["boxes"]
+                bbox[:, [0, 2]] = width - bbox[:, [2, 0]]
+                target["boxes"] = bbox
+                if "masks" in target:
+                    target["masks"] = target["masks"].flip(-1)
+                if "keypoints" in target:
+                    keypoints = target["keypoints"]
+                    keypoints = _flip_coco_person_keypoints(keypoints, width)
+                    target["keypoints"] = keypoints
+        except Exception as e:
+            print(e)
         return image, target
 
 
