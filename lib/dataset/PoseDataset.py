@@ -191,9 +191,28 @@ class PoseDataset(Dataset):
 
             # add to the list
             keypoint_list += [coords + visible]
-        
+    
         # TODO extend this to multiple boxes when we start doing multi person labeling
         target['keypoints'] = [keypoint_list]
+
+        # Determine orientation of swimmer and modify target appropriately
+        keypoints = target['keypoints']
+        # x_coordinate of closest shoulder and hip
+        shoulder_close_x = keypoints[0][5][0]
+        hip_close_x = keypoints[0][11][0]
+
+        if shoulder_close_x < hip_close_x:
+            direction = 'left'
+            # order of keypoints is correct
+
+        else:
+            direction = 'right'
+
+            # swap left and right joins (close = right, far = left)
+            flip_inds = [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
+            keypoints = keypoints[:, flip_inds]
+            target['keypoints'] = keypoints
+
         return target, not_annotated
 
     def draw_keypoints(self, idx):

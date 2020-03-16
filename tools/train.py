@@ -53,12 +53,12 @@ def main(args):
 
     # create dataset
     print('loading dataset...')
-    dataset = PoseDataset([osp.join(project_root,'data/vzf/freestyle/freestyle_1')], train=True)
+    dataset = PoseDataset([osp.join(project_root,'data/vzf/breaststroke/breaststroke_1'),osp.join(project_root,'data/vzf/freestyle/freestyle_1')], train=True)
 
     # split the dataset in train and test set
     indices = torch.randperm(len(dataset)).tolist()
-    dataset_train = torch.utils.data.Subset(dataset, indices[:-10])
-    dataset_test = torch.utils.data.Subset(dataset, indices[-10:])
+    dataset_train = torch.utils.data.Subset(dataset, indices[:-20])
+    dataset_test = torch.utils.data.Subset(dataset, indices[-20:])
 
     # create dataloaders
     print('creating dataloaders...')
@@ -95,7 +95,7 @@ def main(args):
         train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
         lr_scheduler.step()
         evaluate(model, data_loader_test, device=device)
-        torch.save(model.state_dict(), output_base_url + '_epoch{}-{}.wth'.format(epoch, num_epochs))
+    torch.save(model.state_dict(), output_base_url + '_epoch{}-{}.wth'.format(epoch, num_epochs))
     end = time.time()
 
     duration_min = (end - start)/60
