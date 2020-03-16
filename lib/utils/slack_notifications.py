@@ -1,6 +1,6 @@
 import os
 from slack import WebClient 
-from secrets import oauth_acces_token, bot_user_oauth_acces_token
+from .secrets import oauth_acces_token, bot_user_oauth_acces_token
 
 # acces tokens for swimthesis.slack.com
 #post message in channel
