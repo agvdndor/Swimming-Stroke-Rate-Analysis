@@ -24,8 +24,9 @@ from lib.dataset.PoseDataset import PoseDataset
 
 from lib.models.keypoint_rcnn import get_resnet50_pretrained_model
 
-# slack notifications
+# utils
 from lib.utils.slack_notifications import slack_message
+from lib.utils.select_gpu import select_best_gpu
 
 # references import
 # source: https://github.com/pytorch/vision/tree/master/references/detection
@@ -71,7 +72,7 @@ def main(args):
             collate_fn=collate_fn)
 
     # get device
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    device = select_best_gpu(min_mem=7000) if torch.cuda.is_available() else torch.device('cpu')
     print('selected device: {}'.format(device))
 
     # only set roi_heads trainable
