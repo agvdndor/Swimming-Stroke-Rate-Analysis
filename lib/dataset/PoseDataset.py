@@ -252,15 +252,14 @@ class PoseDataset(Dataset):
         # get target dict
         target, not_annotated = self.get_target_from_file(ann_file)
 
-        # correct orientation (left <-> right facing swimmer)
-        target = self.correct_orientation(target, not_annotated)
 
         # target as tensors
         target['boxes'] = torch.FloatTensor(target['boxes'])
         target['labels'] = torch.tensor(target['labels']).to(torch.int64)
         target['keypoints'] = torch.FloatTensor(target['keypoints'])
 
-        
+        # correct orientation (left <-> right facing swimmer)
+        target = self.correct_orientation(target, not_annotated)
 
         if self.transform:
             image, target = self.transform(image, target)
