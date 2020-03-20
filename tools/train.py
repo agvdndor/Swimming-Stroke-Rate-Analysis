@@ -2,6 +2,7 @@ import sys
 from os import path as osp
 from datetime import datetime
 from tqdm import tqdm
+import copy
 
 import time
 
@@ -30,7 +31,7 @@ from lib.utils.select_gpu import select_best_gpu
 
 # references import
 # source: https://github.com/pytorch/vision/tree/master/references/detection
-from references.engine import train_one_epoch, evaluate
+from references.engine import train_one_epoch, val_one_epoch, evaluate
 from references.utils import collate_fn
 
 
@@ -52,23 +53,32 @@ def main(args):
     print('loading model...')
     model = get_resnet50_pretrained_model()
 
-    # create dataset
-    print('loading dataset...')
-    dataset = PoseDataset([osp.join(project_root,'data/vzf/breaststroke/breaststroke_1'),osp.join(project_root,'data/vzf/freestyle/freestyle_1')], train=True)
+    # create datasets
+    print('loading train dataset...')
+    train_dataset = PoseDataset([
+        osp.join(project_root,'data/vzf/breaststroke/breaststroke_1'),
+        osp.join(project_root,'data/vzf/freestyle/freestyle_2'), 
+        osp.join(project_root,'data/vzf/breaststroke/freestyle_3'),
+        osp.join(project_root,'data/vzf/breaststroke/breaststroke_4')], train=True)
+
+    print('loading val dataset...')
+    val_dataset = PoseDataset([
+        osp.join(project_root,'data/vzf/breaststroke/freestyle_5'),
+        osp.join(project_root,'data/vzf/freestyle/freestyle_6')], train=True)
 
     # split the dataset in train and test set
-    indices = torch.randperm(len(dataset)).tolist()
-    dataset_train = torch.utils.data.Subset(dataset, indices[:-20])
-    dataset_test = torch.utils.data.Subset(dataset, indices[-20:])
+    #indices = torch.randperm(len(dataset)).tolist()
+    #dataset_train = torch.utils.data.Subset(dataset, indices[:-20])
+    #dataset_test = torch.utils.data.Subset(dataset, indices[-20:])
 
     # create dataloaders
     print('creating dataloaders...')
     data_loader = DataLoader(
-            dataset_train, batch_size=10, shuffle=True, num_workers=4,
+            train_dataset, batch_size=20, shuffle=True, num_workers=4,
             collate_fn=collate_fn)
 
     data_loader_test = DataLoader(
-            dataset_test, batch_size=10, shuffle=True, num_workers=4,
+            val_dataset, batch_size=20, shuffle=True, num_workers=4,
             collate_fn=collate_fn)
 
     # get device
@@ -91,16 +101,42 @@ def main(args):
     
 
     start = time.time()
+
+    # initialize to very large value
+    min_box_loss = 10000
+    min_kp_loss = 10000
+
     num_epochs = 10
     for epoch in tqdm(range(0,num_epochs)):
         train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
         lr_scheduler.step()
-        evaluate(model, data_loader_test, device=device)
-    torch.save(model.state_dict(), output_base_url + '_epoch{}-{}.wth'.format(epoch, num_epochs))
+
+        # validation
+        box_loss, kp_Loss = val_one_epoch(model, optimizer, data_loader_test, device, epoch, print_freq=len(data_loader_test))
+        if kp_loss < min_kp_loss:
+            print('improved val score, saving state dict...')
+            # lower validation score found
+            min_kp_loss = kp_Loss
+            min_box_loss = box_loss
+
+            temp_state_dict = copy.deepcopy(model.state_dict())
+        else:
+            print('loading precious state dict...')
+            model.load_state_dict(temp_state_dict)
+           
+        # every 10 epochs use coco to evaluate
+        if epoch % 10 == 0:
+            print('COCO EVAL EPOCH {}'.format(epoch))
+            evaluate(model, data_loader_test, device=device)
+
+    evaluator = evaluate(model, data_loader_test, device=device)
+    torch.save(model.state_dict(), output_base_url + '_epoch{}-{}_min_val_loss_{}.wth'.format(epoch, num_epochs, min_kp_loss))
     end = time.time()
 
-    duration_min = (end - start)/60
-    slack_message("Done Training, took {}min".format(duration_min), channel='#train')
+    duration_min = int((end - start)/60)
+
+    # post result to slack channel
+    slack_message("Done Training, took {}min \n {}".format(duration_min, evaluator.summarize()), channel='#training')
     
 if __name__ == '__main__':
     # TODO get args
