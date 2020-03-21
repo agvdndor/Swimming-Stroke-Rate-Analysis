@@ -111,18 +111,18 @@ def main(args):
         train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
         lr_scheduler.step()
 
-        # validation
-        box_loss, kp_Loss = val_one_epoch(model, optimizer, data_loader_test, device, epoch, print_freq=len(data_loader_test))
-        if kp_loss < min_kp_loss:
-            print('improved val score, saving state dict...')
-            # lower validation score found
-            min_kp_loss = kp_Loss
-            min_box_loss = box_loss
+        # # validation
+        # box_loss, kp_Loss = val_one_epoch(model, optimizer, data_loader_test, device, epoch, print_freq=len(data_loader_test))
+        # if kp_loss < min_kp_loss:
+        #     print('improved val score, saving state dict...')
+        #     # lower validation score found
+        #     min_kp_loss = kp_Loss
+        #     min_box_loss = box_loss
 
-            temp_state_dict = copy.deepcopy(model.state_dict())
-        else:
-            print('loading precious state dict...')
-            model.load_state_dict(temp_state_dict)
+        #     temp_state_dict = copy.deepcopy(model.state_dict())
+        # else:
+        #     print('loading previous state dict...')
+        #     model.load_state_dict(temp_state_dict)
            
         # every 10 epochs use coco to evaluate
         if epoch % 10 == 0:

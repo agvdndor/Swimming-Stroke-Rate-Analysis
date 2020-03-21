@@ -11,7 +11,7 @@ __version__ = '1.3.2'
 import copy
 import gzip
 import re
-from math import pi
+from math import pi, sqrt
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
@@ -88,6 +88,34 @@ def rmsd(V, W):
     diff = np.array(V) - np.array(W)
     N = len(V)
     return np.sqrt((diff * diff).sum() / N)
+
+# Arne here: my own function, proceed with caution
+def rmsd_weighted(V, W, weights=None):
+    """
+    Calculate Root-mean-square deviation from two sets of vectors V and W.
+    Parameters
+    ----------
+    V : array
+        (N,D) matrix, where N is points and D is dimension.
+    W : array
+        (N,D) matrix, where N is points and D is dimension.
+    Returns
+    -------
+    rmsd : float
+        Root-mean-square deviation between the two vectors
+    """
+    if weights is None:
+        weights = [1] * len(V)
+
+    diff = np.array(V) - np.array(W)
+    N = len(V)
+
+    dist = 0
+    for v,w, weight in zip(V, W, weights):
+        diff = v - w
+        dist += sqrt(weight * np.sum(diff * diff))
+    dist /= N
+    return dist
 
 
 def kabsch_rmsd(P, Q, W=None, translate=False):
@@ -225,7 +253,6 @@ def kabsch(P, Q, max_rotation_radian=pi/4):
 
     U_scipy = Rotation.from_matrix(U)
     theta = U_scipy.as_euler('zyx', degrees=False)[0]
-    print(theta)
     if theta > max_rotation_radian:
         # make new rotation matrix with theta = max_rotation
         U = Rotation.from_quat([0, 0, np.sin(max_rotation_radian), np.cos(max_rotation_radian)])
@@ -238,7 +265,7 @@ def kabsch(P, Q, max_rotation_radian=pi/4):
     return U
 
 
-def kabsch_weighted(P, Q, W=None):
+def kabsch_weighted(P, Q, W=None, max_rotation_radian=pi/4):
     """
     Using the Kabsch algorithm with two sets of paired point P and Q.
     Each vector set is represented as an NxD matrix, where D is the 
@@ -313,6 +340,24 @@ def kabsch_weighted(P, Q, W=None):
         t = (U[i, :] * CMQ).sum()
         V[i] = CMP[i] - t
     V = V * iw
+
+    # limit max rotation angle
+    U_scipy = Rotation.from_matrix(U)
+    theta = U_scipy.as_euler('zyx', degrees=False)[0]
+    if theta > max_rotation_radian:
+        print('theta exceeded')
+        # make new rotation matrix with theta = max_rotation
+        U = Rotation.from_quat([0, 0, np.sin(max_rotation_radian), np.cos(max_rotation_radian)])
+        U = U.as_matrix()
+    elif theta < -max_rotation_radian:
+        print('theta exceeded')
+        # make new rotation matrix with theta = max_rotation
+        U = Rotation.from_quat([0, 0, -np.sin(max_rotation_radian), -np.cos(max_rotation_radian)])
+        U = U.as_matrix()
+
+    # this is no longer correct calculate again!
+    rmsd = -1 
+
     return U, V, rmsd
 
 
@@ -337,8 +382,12 @@ def kabsch_weighted_fit(P, Q, W=None, rmsd=False):
     RMSD : float
            if the function is called with rmsd=True
     """
-    R, T, RMSD = kabsch_weighted(Q, P, W)
+    R, T, _ = kabsch_weighted(Q, P, W)
     PNEW = np.dot(P, R.T) + T
+    
+    # recalculate rmsd since I broke it in kabsch_weighted
+    RMSD = rmsd_weighted(PNEW, Q, weights=W)
+
     if rmsd:
         return PNEW, RMSD
     else:
@@ -462,6 +511,16 @@ def centroid(X):
     """
     C = X.mean(axis=0)
     return C
+
+def centroid_weighted(X, weights):
+    # give more weight to e.g. hip, shoulders, and knees
+    avg = [0,0,0]
+    for x, w in zip(X, weights):
+        avg += w * x
+    
+    avg = avg * 1/sum(weights)
+        
+    return avg
 
 
 def reorder_distance(p_atoms, q_atoms, p_coord, q_coord):
@@ -1384,8 +1443,8 @@ https://github.com/charnley/rmsd for further examples.
 if __name__ == "__main__":
     #main()
 
-    P = [[0,1,1], [0,-1,1]]
-    Q = [[-1,0,1], [1, 0, 1]]
+    P = np.array([[0,1,1], [0,-1,1]])
+    Q = np.array([[-1,0,1], [1, 0, 1]])
 
-    rot_mat = kabsch(P, Q)
-    print(rot_mat)
+    print(centroid(P))
+    print(centroid_weighted(P, [1,2]))

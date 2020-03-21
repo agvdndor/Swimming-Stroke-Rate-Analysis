@@ -4,11 +4,12 @@ import subprocess
 from tqdm import tqdm
 
 data_dir = r"C:\Users\Vande\data_og"
-styles = ["freestyle", "butterfly", "breaststroke"]
+#styles = ["freestyle", "butterfly", "breaststroke"]
+styles = ['freestyle']
 
 # dict with indices of relevant videos for every style
 indices = {}
-indices['freestyle'] = [3,4,5,0]
+indices['freestyle'] = [0,3,4,5,6]
 indices['butterfly'] = [0,3,4,5,6]
 indices['breaststroke'] = [0,3,4,5,6]
 indices['backstroke'] = [0,3,4,5,6]
@@ -18,11 +19,13 @@ motion_compensation = True
 
 def main():
     for style in styles:
-        style_dir = os.path.join(data_dir, style)
+        # NOTE dont use os.path because wsl fucks with this
+        style_dir = data_dir + '\\' + style
         print("starting style: ", style)
 
         # get all samples (numbered 1 to ...)
-        samples = glob.glob(os.path.join(style_dir, '*'))
+        samples = glob.glob(style_dir + '\\' + '*')
+        print(style_dir + '\\' + '*')
         print("found ", str(len(samples))," samples..." )
 
         for sample in tqdm(samples):
