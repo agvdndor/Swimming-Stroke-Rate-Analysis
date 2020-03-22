@@ -8,8 +8,8 @@ def _flip_coco_person_keypoints(kps, width):
     flipped_data = kps[:, flip_inds]
     flipped_data[..., 0] = width - flipped_data[..., 0]
     # Maintain COCO convention that if visibility == 0, then x, y = 0
-    inds = flipped_data[..., 2] == 0
-    flipped_data[inds] = 0
+    #inds = flipped_data[..., 2] == 0
+    #flipped_data[inds] = 0
     return flipped_data
 
 
