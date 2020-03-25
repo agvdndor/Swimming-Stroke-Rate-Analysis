@@ -8,6 +8,16 @@ from os import path as osp
 import csv
 from glob import glob
 import torch
+import flowiz as fz
+import matplotlib as plt
+
+# get root directory
+import re
+reg = '^.*/AquaPose'
+project_root = re.findall(reg, osp.dirname(osp.abspath(sys.argv[0])))[0]
+sys.path.append(project_root)
+
+from lib.utils.visual_utils import plot_optical_vectors
 
 def flo_to_numpy(flo_url):
     with open(flo_url, mode='r') as flo:
@@ -30,8 +40,8 @@ def get_image_cut_coordinates(dataset_root):
             cut_coordinates[fields[0].split('.')[0]] = [int(fields[1]), int(fields[2])]
     return cut_coordinates
 
-def get_optical_vectors(dataset_root, img_id, coordinate_dict):
-    img_id = int(img_id.item())
+def get_optical_vectors(dataset_root, img_id, coordinate_dict, plot=False):
+    img_id = str(int(img_id.item()))
     cut_co = coordinate_dict[img_id]
     flo_url = osp.join(dataset_root,'stitched_optical_vectors', str(img_id).zfill(6) + '.flo')
 
@@ -40,5 +50,11 @@ def get_optical_vectors(dataset_root, img_id, coordinate_dict):
     except: 
         print('flow files {} not found'.format(flo_url))
         return None
+
+    # cut out right part
+    flo_np = flo_np[:,cut_co[0]:cut_co[0]+cut_co[1], :]
     
+    if plot:
+        plot_optical_vectors(flo_url, cut_co)
+
     return flo_np
