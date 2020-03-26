@@ -72,7 +72,7 @@ class PoseDataset(Dataset):
         self.coco_keypoints = True
 
         # list with connected joints in skeleton
-        #self.skeleton = [[1,2], [2,3], [1,4], [4,5], [5,6], [1,7], [7,8], [8,9], [7,10], [10,11], [11,12], [4,10]]
+        #self.skeleton = [[1,2], [1,3], [2,4], [4,6], [5,7], [1,7], [7,8], [8,9], [7,10], [10,11], [11,12], [4,10]]
         self.skeleton = [[5,6], [5,7], [7,9], [6,8], [8,10], [5,11], [6,12], [11,12], [11,13], [12,14], [13,15], [14,16]]
         self.stride = stride
 

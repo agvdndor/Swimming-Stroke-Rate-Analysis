@@ -82,3 +82,13 @@ def plot_numpy_image_with_kps(img, kps_list, color_list= ['b', 'r', 'g']):
 def plot_optical_vectors(url,cut_co):
     vis = fz.convert_from_file(url)
     plt.imshow(vis[:,cut_co[0]:cut_co[0]+cut_co[1]])
+
+
+def plot_image_with_kps_skeleton(img_tensor, kps_list, color_list=['b', 'r', 'g'], filter_ind=[x for x in range(0,13)], skeleton=[[1,2], [1,3],[3,5], [2,4],[4,6], [1,7], [2,8],[7,8],[7,9],[9,11],[8,10],[10,12]]):
+    fig, ax = plt.subplots()
+    plt.imshow(tensor_to_numpy_image(img_tensor))
+    for kps, clr in zip(kps_list, color_list):
+        ax.scatter((np.array(kps)[filter_ind])[:,0],(np.array(kps)[filter_ind])[:,1], s=10, marker='.', c=clr)
+    for joint in skeleton:
+        if joint[0] in filter_ind and joint[1] in filter_ind:
+            plt.plot([kps[joint[0]][0], kps[joint[1]][0]], [kps[joint[0]][1], kps[joint[1]][1]], c=clr)
