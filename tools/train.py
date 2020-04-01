@@ -56,15 +56,15 @@ def main(args):
     # create datasets
     print('loading train dataset...')
     train_dataset = PoseDataset([
-        osp.join(project_root,'data/vzf/breaststroke/breaststroke_1'),
+        osp.join(project_root,'data/vzf/freestyle/freestyle_1'),
         osp.join(project_root,'data/vzf/freestyle/freestyle_2'), 
-        osp.join(project_root,'data/vzf/breaststroke/freestyle_3'),
-        osp.join(project_root,'data/vzf/breaststroke/breaststroke_4')], train=True)
+        osp.join(project_root,'data/vzf/freestyle/freestyle_3'),
+        osp.join(project_root,'data/vzf/freestyle/freestyle_4')], train=True)
     print('train dataset size: {}'.format(len(train_dataset)))
 
     print('loading val dataset...')
     val_dataset = PoseDataset([
-        osp.join(project_root,'data/vzf/breaststroke/freestyle_5'),
+        osp.join(project_root,'data/vzf/freestyle/freestyle_5'),
         osp.join(project_root,'data/vzf/freestyle/freestyle_6')], train=True)
     print('test dataset size: {}'.format(len(val_dataset)))
 
