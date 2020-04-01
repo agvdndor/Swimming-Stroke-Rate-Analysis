@@ -50,7 +50,30 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
 
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
-    
+
+
+@torch.no_grad()
+def get_validation_error(model, data_loader, device):
+    num_batches = 0
+    total_box_reg_loss = 0
+    total_kp_loss = 0 
+    for images, targets in data_loader:
+
+        num_batches += 1
+
+        images = list(image.to(device) for image in images)
+        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+
+        loss_dict = model(images, targets)
+
+        losses = sum(loss for loss in loss_dict.values())
+
+        total_box_reg_loss += loss_dict['loss_box_reg'].item()
+        total_kp_loss +=  loss_dict['loss_keypoint'].item()
+
+    return total_box_reg_loss / num_batches , total_kp_loss / num_batches
+
+@torch.no_grad()
 def val_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
     # set to train to get loss dict, but gradients are not used to update weights!
     model.train()

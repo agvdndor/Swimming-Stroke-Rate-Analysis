@@ -31,7 +31,7 @@ from lib.utils.select_gpu import select_best_gpu
 
 # references import
 # source: https://github.com/pytorch/vision/tree/master/references/detection
-from references.engine import train_one_epoch, val_one_epoch, evaluate
+from references.engine import train_one_epoch, val_one_epoch, evaluate, get_validation_error
 from references.utils import collate_fn
 
 
@@ -81,7 +81,7 @@ def main(args):
             
 
     data_loader_test = DataLoader(
-            test_dataset, batch_size=10, shuffle=True, num_workers=4,
+            val_dataset, batch_size=10, shuffle=True, num_workers=4,
             collate_fn=collate_fn)
 
     # get device
@@ -101,7 +101,9 @@ def main(args):
     #train
     print('loading model onto device')
     model.to(device)
-    
+
+    # training mode
+    model.train()
 
     start = time.time()
 
@@ -110,25 +112,26 @@ def main(args):
     min_kp_loss = 10000
 
     num_epochs = 10
+    get_validation_error(model, data_loader_test, device)
     for epoch in tqdm(range(0,num_epochs)):
         train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
         lr_scheduler.step()
 
-        # # validation
-        # box_loss, kp_loss = val_one_epoch(model, optimizer, data_loader_test, device, epoch, print_freq=len(data_loader_test))
-        # print('box_loss: {}, kp_loss: {}'.format(box_loss, kp_loss))
-        # if kp_loss < min_kp_loss:
-        #     print('improved val score, saving state dict...')
-        #     # lower validation score found
-        #     min_kp_loss = kp_loss
-        #     min_box_loss = box_loss
+        # validation
+        box_loss, kp_loss = get_validation_error(model, optimizer, device)
+        print('box_loss: {}, kp_loss: {}'.format(box_loss, kp_loss))
+        if kp_loss < min_kp_loss:
+            print('improved val score, saving state dict...')
+            # lower validation score found
+            min_kp_loss = kp_loss
+            min_box_loss = box_loss
 
-        #     temp_state_dict = copy.deepcopy(model.state_dict())
-        # else:
-        #     print('loading previous state dict (current best: {})...'.format(min_kp_loss))
-        #     model.load_state_dict(temp_state_dict)
+            temp_state_dict = copy.deepcopy(model.state_dict())
+        else:
+            print('loading previous state dict (current best: {})...'.format(min_kp_loss))
+            model.load_state_dict(temp_state_dict)
            
-        # # every 10 epochs use coco to evaluate
+        # every 10 epochs use coco to evaluate
         if epoch % 10 == 0:
             print('COCO EVAL EPOCH {}'.format(epoch))
             evaluate(model, data_loader_test, device=device)
