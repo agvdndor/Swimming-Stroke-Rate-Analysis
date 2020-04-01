@@ -45,8 +45,8 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
         losses.backward()
         optimizer.step()
 
-        if lr_scheduler is not None:
-            lr_scheduler.step()
+        # if lr_scheduler is not None:
+        #     lr_scheduler.step()
 
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
@@ -89,8 +89,8 @@ def val_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
             print(loss_dict_reduced)
             sys.exit(1)
 
-        if lr_scheduler is not None:
-            lr_scheduler.step()
+        # if lr_scheduler is not None:
+        #     lr_scheduler.step()
 
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
@@ -103,7 +103,7 @@ def val_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
         # this is validation so no call to optimizer.step()!
         #optimizer.step()
 
-    return total_box_reg_loss / num_batches , total_box_reg_loss / num_batches
+    return total_box_reg_loss / num_batches , total_kp_loss / num_batches
 
 def _get_iou_types(model):
     model_without_ddp = model

@@ -60,11 +60,13 @@ def main(args):
         osp.join(project_root,'data/vzf/freestyle/freestyle_2'), 
         osp.join(project_root,'data/vzf/breaststroke/freestyle_3'),
         osp.join(project_root,'data/vzf/breaststroke/breaststroke_4')], train=True)
+    print('train dataset size: {}'.format(len(train_dataset)))
 
     print('loading val dataset...')
     val_dataset = PoseDataset([
         osp.join(project_root,'data/vzf/breaststroke/freestyle_5'),
         osp.join(project_root,'data/vzf/freestyle/freestyle_6')], train=True)
+    print('test dataset size: {}'.format(len(val_dataset)))
 
     # split the dataset in train and test set
     #indices = torch.randperm(len(dataset)).tolist()
@@ -76,9 +78,10 @@ def main(args):
     data_loader = DataLoader(
             train_dataset, batch_size=10, shuffle=True, num_workers=4,
             collate_fn=collate_fn)
+            
 
     data_loader_test = DataLoader(
-            val_dataset, batch_size=10, shuffle=True, num_workers=4,
+            train_dataset, batch_size=10, shuffle=True, num_workers=4,
             collate_fn=collate_fn)
 
     # get device
@@ -122,7 +125,7 @@ def main(args):
 
             temp_state_dict = copy.deepcopy(model.state_dict())
         else:
-            print('loading previous state dict...')
+            print('loading previous state dict (current best: {})...'.format(min_kp_loss))
             model.load_state_dict(temp_state_dict)
            
         # every 10 epochs use coco to evaluate
