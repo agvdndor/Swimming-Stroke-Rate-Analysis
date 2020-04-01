@@ -60,7 +60,13 @@ def val_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
 
     lr_scheduler = None
 
+    num_batches = 0
+    total_box_reg_loss = 0
+    total_kp_loss = 0 
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
+
+        num_batches += 1
+
         images = list(image.to(device) for image in images)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
@@ -74,10 +80,20 @@ def val_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
 
         loss_value = losses_reduced.item()
 
+        total_box_reg_loss += loss_dict['loss_box_reg'].item()
+        total_kp_loss +=  loss_dict['loss_keypoint'].item()
+
+
         if not math.isfinite(loss_value):
             print("Validation Loss is {}, stopping training".format(loss_value))
             print(loss_dict_reduced)
             sys.exit(1)
+
+        if lr_scheduler is not None:
+            lr_scheduler.step()
+
+        metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
+        metric_logger.update(lr=optimizer.param_groups[0]["lr"])
 
         # don't do this since it is validation
         optimizer.zero_grad()
@@ -87,13 +103,7 @@ def val_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
         # this is validation so no call to optimizer.step()!
         #optimizer.step()
 
-        if lr_scheduler is not None:
-            lr_scheduler.step()
-
-        metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
-        metric_logger.update(lr=optimizer.param_groups[0]["lr"])
-
-        return loss_dict['loss_box_reg'].item(), loss_dict['loss_keypoint'].item()
+    return total_box_reg_loss / num_batches , total_box_reg_loss / num_batches
 
 def _get_iou_types(model):
     model_without_ddp = model
