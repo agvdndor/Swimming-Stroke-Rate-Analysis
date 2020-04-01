@@ -65,7 +65,7 @@ def main(args):
     print('loading val dataset...')
     val_dataset = PoseDataset([
         osp.join(project_root,'data/vzf/freestyle/freestyle_5'),
-        osp.join(project_root,'data/vzf/freestyle/freestyle_6')], train=True)
+        osp.join(project_root,'data/vzf/freestyle/freestyle_6')], train=False)
     print('test dataset size: {}'.format(len(val_dataset)))
 
     # split the dataset in train and test set
@@ -117,12 +117,12 @@ def main(args):
         train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
         
 
-        if epoch % 5 == 0:
+        if epoch % 5 == 0 or epoch == num_epochs - 1:
+            lr_scheduler.step()
             # validation
             box_loss, kp_loss = get_validation_error(model, data_loader_test, device)
             print('box_loss: {}, kp_loss: {}'.format(box_loss, kp_loss))
             if kp_loss < min_kp_loss:
-                lr_scheduler.step()
                 print('improved val score, saving state dict...')
                 # lower validation score found
                 min_kp_loss = kp_loss
@@ -134,7 +134,7 @@ def main(args):
                 model.load_state_dict(temp_state_dict)
             
         # every 10 epochs use coco to evaluate
-        if epoch % 10 == 0:
+        if epoch % 10 == 0 or epoch == num_epochs - 1:
             print('COCO EVAL EPOCH {}'.format(epoch))
             evaluate(model, data_loader_test, device=device)
 
