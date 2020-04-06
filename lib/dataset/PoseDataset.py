@@ -79,7 +79,7 @@ class PoseDataset(Dataset):
         # only add annotated frames 
         ann_list = []
         for dataset in dataset_list:
-            for ann_file in glob(os.path.join(dataset, "ann", '*')):
+            for ann_file in sorted(glob(os.path.join(dataset, "ann", '*'))):
                 if PoseDataset.is_annotated(ann_file):
                     ann_list += [ann_file]
         self.ann_list = ann_list

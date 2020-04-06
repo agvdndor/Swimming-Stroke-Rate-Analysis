@@ -50,7 +50,7 @@ class CycleDataset(Dataset):
         seq_end = None
 
         for dataset in dataset_list:
-            for ann_file in glob(os.path.join(dataset, "ann_cycle", '*')):
+            for ann_file in sorted(glob(os.path.join(dataset, "ann_cycle", '*'))):
                 if CycleDataset.is_annotated(ann_file):
                     if cur_phase is None:
                         seq_start = len(self.items)
