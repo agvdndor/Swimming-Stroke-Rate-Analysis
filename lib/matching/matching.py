@@ -569,7 +569,7 @@ def get_observation_likelihood(model, inference_dataset, anchor_dataset, max_str
             last_id = id
 
             if device:
-                img.to(device)
+                img = img.to(device)
             prediction = model([img])
             prediction.to(cpu)
             pred_box, pred_kps, pred_scores = get_max_prediction(prediction)
