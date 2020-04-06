@@ -537,13 +537,12 @@ def get_observation_likelihood_and_hidden_state(model, inference_dataset, anchor
 
     return np.array(img_ids_list), np.array(obslik_list), np.array(observations_list), np.array(hidden_states_list), np.array(flipped_list)
 
-def get_observation_likelihood(model, inference_dataset, anchor_dataset, max_stride=1):
+def get_observation_likelihood(model, inference_dataset, anchor_dataset, max_stride=1, device=None):
     model.eval()
+    cpu = torch.device('cpu')
     
     observations_list = []
-    hidden_states_list = []
     obslik_list =[]
-    img_ids_list = []
     flipped_list = []
 
     # initialize empty likelihood
@@ -569,7 +568,10 @@ def get_observation_likelihood(model, inference_dataset, anchor_dataset, max_str
 
             last_id = id
 
+            if device:
+                img.to(device)
             prediction = model([img])
+            prediction.to(cpu)
             pred_box, pred_kps, pred_scores = get_max_prediction(prediction)
 
             # print('pred_kps {}'.format(pred_kps))
