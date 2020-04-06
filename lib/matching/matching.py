@@ -17,6 +17,8 @@ from torch.utils.data.dataloader import DataLoader
 from os import path as osp
 import sys
 
+from math import pi
+
 # get root directory
 import re
 reg = '^.*/AquaPose'
@@ -136,7 +138,7 @@ def do_kabsch_transform(pred_kps, ref_kps, translat_weights=None, filter_ind=Non
     QC = centroid_weighted(Q, weights)
     Q = Q - QC
     P = P - centroid_weighted(P, weights)
-    P = kabsch_rotate(P, Q) + QC
+    P = kabsch_rotate(P, Q, max_rotation_radian= pi/90) + QC
 
     return P
 
@@ -570,8 +572,13 @@ def get_observation_likelihood(model, inference_dataset, anchor_dataset, max_str
 
             if device:
                 img = img.to(device)
+                
             prediction = model([img])
-            prediction.to(cpu)
+
+            if device:
+                prediction = targets = [{k: v.cpu() for k, v in t.items()} for t in prediction]
+                img.cpu()
+            
             pred_box, pred_kps, pred_scores = get_max_prediction(prediction)
 
             # print('pred_kps {}'.format(pred_kps))
@@ -623,9 +630,18 @@ def warp_anchor_on_pred(model, inf_img, anchor_dataset, anchor_id, flipped):
     anchor_kps = anchor_target['keypoints'][0].detach().numpy()
 
     # get inference prediction
-    prediction = model([inf_img])
-    pred_box, pred_kps, pred_scores = get_max_prediction(prediction)
+    if device:
+            inf_img = inf_img.to(device)
 
+    prediction = model([inf_img])
+
+    if device:
+            prediction = targets = [{k: v.cpu() for k, v in t.items()} for t in prediction]
+            inf_img = inf_img.cpu()
+
+    pred_box, pred_kps, pred_scores = get_max_prediction(prediction)
+    
+    
     #merge head
     anchor_kps_merged = merge_head(anchor_kps)
     pred_kps_merged = merge_head(pred_kps)
@@ -639,6 +655,10 @@ def warp_anchor_on_pred(model, inf_img, anchor_dataset, anchor_id, flipped):
             occluded = False,
             filter_lr_confusion = True
             )
+
+    if len(filter_ind) == 0:
+        #plot_image_with_kps(inf_img, [pred_kps_merged[pred_scores_merged > 0]], ['r'])
+        return ref_kps_np
     
     translat_weights = T_WEIGHTS
     
@@ -674,7 +694,7 @@ def warp_anchor_on_pred(model, inf_img, anchor_dataset, anchor_id, flipped):
 
     # replace it with getting the rotation matrix
     # rotate ref onto pred!! 
-    rot_mat = kabsch(ref_t, pred_t)
+    rot_mat = kabsch(ref_t, pred_t,  max_rotation_radian=pi/90)
 
     #pred_t = np.array([[kp[0], kp[1], 1] for kp in pred_kps_np]) - pred_translat
     ref_t = np.array([[kp[0], kp[1], 1] for kp in ref_kps_np]) - ref_translat

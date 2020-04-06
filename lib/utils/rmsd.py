@@ -149,7 +149,7 @@ def kabsch_rmsd(P, Q, W=None, translate=False):
     return rmsd(P, Q)
 
 
-def kabsch_rotate(P, Q):
+def kabsch_rotate(P, Q, max_rotation_radian= pi/90):
     """
     Rotate matrix P unto matrix Q using Kabsch algorithm.
     Parameters
@@ -164,7 +164,7 @@ def kabsch_rotate(P, Q):
         (N,D) matrix, where N is points and D is dimension,
         rotated
     """
-    U = kabsch(P, Q)
+    U = kabsch(P, Q, max_rotation_radian= max_rotation_radian)
 
     # Rotate P
     P = np.dot(P, U)
@@ -199,7 +199,7 @@ def kabsch_fit(P, Q, W=None):
     return P
 
 
-def kabsch(P, Q, max_rotation_radian=pi/4):
+def kabsch(P, Q, max_rotation_radian=pi/12):
     """
     Using the Kabsch algorithm with two sets of paired point P and Q, centered
     around the centroid. Each vector set is represented as an NxD
@@ -259,7 +259,7 @@ def kabsch(P, Q, max_rotation_radian=pi/4):
         U = U.as_matrix()
     elif theta < -max_rotation_radian:
         # make new rotation matrix with theta = max_rotation
-        U = Rotation.from_quat([0, 0, -np.sin(max_rotation_radian), -np.cos(max_rotation_radian)])
+        U = Rotation.from_quat([0, 0, np.sin(-max_rotation_radian), np.cos(-max_rotation_radian)])
         U = U.as_matrix()
 
     return U
