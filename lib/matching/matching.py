@@ -30,7 +30,7 @@ from lib.models.keypoint_rcnn import get_resnet50_pretrained_model
 # utils
 from lib.utils.slack_notifications import slack_message
 from lib.utils.select_gpu import select_best_gpu
-from lib.utils.rmsd import kabsch_rmsd, kabsch_rotate, kabsch_weighted_rmsd, centroid, centroid_weighted, rmsd, rmsd_weighted
+from lib.utils.rmsd import kabsch_rmsd, kabsch_rotate, kabsch_weighted_rmsd, centroid, centroid_weighted, rmsd, rmsd_weighted, kabsch
 
 # references import
 # source: https://github.com/pytorch/vision/tree/master/references/detection
@@ -176,6 +176,10 @@ def get_kabsch_distance(pred_kps, ref_kps, filter_ind = None, translat_weights=N
 #     return np.dot(kps, tf_mat)
 
 def kabsch_similarity_score(pred_kps, ref_kps, filter_ind=None, translat_weights=None, threshold_pct = 0.3 , weights = None):
+    
+    if len(pred_kps) == 0 or len(filter_ind) == 0:
+        return 0.0
+
 
     kabsch_kps = do_kabsch_transform(pred_kps,
         ref_kps,
@@ -452,7 +456,7 @@ def viterbi_path(prior, transmat, obslik, scaled=True, ret_loglik=False):
             loglik = np.log(p)
         return path, loglik
 
-def get_observation_likelihood_and_hidden_state(model, inference_dataset, anchor_dataset, max_stride=3):
+def get_observation_likelihood_and_hidden_state(model, inference_dataset, anchor_dataset, max_stride=1):
     model.eval()
     
     observations_list = []
@@ -513,7 +517,7 @@ def get_observation_likelihood_and_hidden_state(model, inference_dataset, anchor
             
             scores = np.array(scores)[np.argsort(best_ind)]
             flipped = np.array(flipped)[np.argsort(best_ind)]
-            scores = np.power(scores, np.array([2.5] * len(scores)))
+            scores = np.power(scores, np.array([4.0] * len(scores)))
             scores_norm = np.array(scores)/np.sum(np.array(scores))
             scores_norm = np.array([[score] for score in scores_norm])
             flipped = np.array([[f] for f in flipped])
@@ -532,6 +536,71 @@ def get_observation_likelihood_and_hidden_state(model, inference_dataset, anchor
         flipped_list += [flipped_mat]
 
     return np.array(img_ids_list), np.array(obslik_list), np.array(observations_list), np.array(hidden_states_list), np.array(flipped_list)
+
+def get_observation_likelihood(model, inference_dataset, anchor_dataset, max_stride=1):
+    model.eval()
+    
+    observations_list = []
+    hidden_states_list = []
+    obslik_list =[]
+    img_ids_list = []
+    flipped_list = []
+
+    # initialize empty likelihood
+    obslik = np.zeros((len(anchor_dataset), 0))
+
+
+    last_id = 0
+
+    while last_id < len(inference_dataset) - 1:
+        # image ids (name of image.jpg), to allow for checking of stride
+        prev_id = None
+        cur_id = None
+
+        observations = []
+        hidden_states = []
+        img_ids = []
+        obslik = np.zeros((len(anchor_dataset), 0))
+        flipped_mat = np.zeros((len(anchor_dataset),0))
+
+        cur_range = range(last_id, len(inference_dataset))
+        for id in tqdm(cur_range):
+            img, target = inference_dataset[id]
+
+            last_id = id
+
+            prediction = model([img])
+            pred_box, pred_kps, pred_scores = get_max_prediction(prediction)
+
+            # print('pred_kps {}'.format(pred_kps))
+            # print('pred_scores {}'.format(pred_scores))
+
+            # get observed state
+            best_ind, scores, flipped = get_most_similar_ind_and_scores(pred_kps, pred_scores, anchor_dataset, num=len(anchor_dataset),  filter_lr_confusion=False, occluded=False, translat_weights=T_WEIGHTS, kp_weights=KP_WEIGHTS)
+
+            observations += [best_ind[0]]
+            
+            scores = np.array(scores)[np.argsort(best_ind)]
+            flipped = np.array(flipped)[np.argsort(best_ind)]
+            scores = np.power(scores, np.array([4.0] * len(scores)))
+            if np.sum(scores) > 0:
+                scores_norm = np.array(scores)/np.sum(np.array(scores))
+            else:
+                scores_norm = np.array([1/len(scores)] * len(scores))
+            scores_norm = np.array([[score] for score in scores_norm])
+            flipped = np.array([[f] for f in flipped])
+            obslik = np.append(obslik, scores_norm, axis=1)
+            flipped_mat = np.append(flipped_mat, flipped, axis=1)
+            
+            print(obslik)
+
+        observations = np.array(observations)
+
+        observations_list += [observations]
+        obslik_list += [obslik]
+        flipped_list += [flipped_mat]
+
+    return np.array(obslik_list), np.array(observations_list), np.array(flipped_list)
 
 def build_transmat(num_states, probs=[.4,.5,.1]):
     transmat = np.zeros((num_states,num_states))
@@ -577,7 +646,7 @@ def warp_anchor_on_pred(model, inf_img, anchor_dataset, anchor_id, flipped):
     ref_kps_np = np.array(anchor_kps_merged)
 
     if translat_weights is None:
-        translat_weights_np = np.array([1] * len(ref_kps))
+        translat_weights_np = np.array([1] * len(anchor_kps))
     else:
         assert len(pred_kps_np) == len(translat_weights)
         translat_weights_np = np.array(translat_weights)
@@ -609,10 +678,10 @@ def warp_anchor_on_pred(model, inf_img, anchor_dataset, anchor_id, flipped):
     ref_t = np.array([[kp[0], kp[1], 1] for kp in ref_kps_np]) - ref_translat
 
     # rotate and translate back onto prediction
-    #ref_rot_t = np.dot(ref_t, rot_mat) + pred_translat
-    ref_rot_t = ref_t + pred_translat
+    ref_rot_t = np.dot(ref_t, rot_mat) + pred_translat
+    #ref_rot_t = ref_t + pred_translat
 
     # only upper body
     filter_ind = np.intersect1d(filter_ind, [0,1,2,3,4,5,6,7,8])
-    plot_image_with_kps_skeleton(inf_img, [pred_kps_merged, anchor_kps_merged], color_list=['r', 'w'], filter_ind=filter_ind)
+    plot_image_with_kps(inf_img, [pred_kps_merged[pred_scores_merged > 0]], ['r'])
     return ref_rot_t
