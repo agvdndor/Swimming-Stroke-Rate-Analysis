@@ -25,7 +25,6 @@ reg = '^.*/AquaPose'
 project_root = re.findall(reg, osp.dirname(osp.abspath(sys.argv[0])))[0]
 sys.path.append(project_root)
 
-from lib.dataset.PoseDataset import PoseDataset
 
 from lib.models.keypoint_rcnn import get_resnet50_pretrained_model
 
@@ -539,6 +538,7 @@ def get_observation_likelihood_and_hidden_state(model, inference_dataset, anchor
 
     return np.array(img_ids_list), np.array(obslik_list), np.array(observations_list), np.array(hidden_states_list), np.array(flipped_list)
 
+# this can only handle cycle subsets now
 def get_observation_likelihood(model, inference_dataset, anchor_dataset, max_stride=1, device=None):
     model.eval()
     cpu = torch.device('cpu')
@@ -553,7 +553,7 @@ def get_observation_likelihood(model, inference_dataset, anchor_dataset, max_str
 
     last_id = 0
 
-    while last_id < len(inference_dataset) - 1:
+    for seq in inference_dataset.sequences:
         # image ids (name of image.jpg), to allow for checking of stride
         prev_id = None
         cur_id = None
@@ -564,22 +564,10 @@ def get_observation_likelihood(model, inference_dataset, anchor_dataset, max_str
         obslik = np.zeros((len(anchor_dataset), 0))
         flipped_mat = np.zeros((len(anchor_dataset),0))
 
-        cur_range = range(last_id, len(inference_dataset))
+        cur_range = range(seq[0], seq[1])
         for id in tqdm(cur_range):
-            img, target = inference_dataset[id]
-
-            last_id = id
-
-            if device:
-                img = img.to(device)
-                
-            prediction = model([img])
-
-            if device:
-                prediction = targets = [{k: v.cpu() for k, v in t.items()} for t in prediction]
-                img.cpu()
             
-            pred_box, pred_kps, pred_scores = get_max_prediction(prediction)
+            pred_box, pred_kps, pred_scores = inference_dataset.predict(model, id)
 
             # print('pred_kps {}'.format(pred_kps))
             # print('pred_scores {}'.format(pred_scores))
@@ -601,8 +589,6 @@ def get_observation_likelihood(model, inference_dataset, anchor_dataset, max_str
             obslik = np.append(obslik, scores_norm, axis=1)
             flipped_mat = np.append(flipped_mat, flipped, axis=1)
             
-            print(obslik)
-
         observations = np.array(observations)
 
         observations_list += [observations]
@@ -618,7 +604,7 @@ def build_transmat(num_states, probs=[.4,.5,.1]):
             transmat[i,(i+offset)%num_states] = prob
     return transmat
 
-def warp_anchor_on_pred(model, inf_img, anchor_dataset, anchor_id, flipped):
+def warp_anchor_on_pred(model, inference_dataset, inference_id, anchor_dataset, anchor_id, flipped):
     
     # get anchor
     anchor_img, anchor_target = anchor_dataset[anchor_id]
@@ -629,17 +615,9 @@ def warp_anchor_on_pred(model, inf_img, anchor_dataset, anchor_id, flipped):
     
     anchor_kps = anchor_target['keypoints'][0].detach().numpy()
 
+    
     # get inference prediction
-    if device:
-            inf_img = inf_img.to(device)
-
-    prediction = model([inf_img])
-
-    if device:
-            prediction = targets = [{k: v.cpu() for k, v in t.items()} for t in prediction]
-            inf_img = inf_img.cpu()
-
-    pred_box, pred_kps, pred_scores = get_max_prediction(prediction)
+    pred_box, pred_kps, pred_scores = inference_dataset.predict(model, inference_id)
     
     
     #merge head
@@ -705,5 +683,5 @@ def warp_anchor_on_pred(model, inf_img, anchor_dataset, anchor_id, flipped):
 
     # only upper body
     filter_ind = np.intersect1d(filter_ind, [0,1,2,3,4,5,6,7,8])
-    plot_image_with_kps(inf_img, [pred_kps_merged[pred_scores_merged > 0]], ['r'])
+    plot_image_with_kps(inference_dataset[inference_id][0], [pred_kps_merged[pred_scores_merged > 0]], ['r'])
     return ref_rot_t
