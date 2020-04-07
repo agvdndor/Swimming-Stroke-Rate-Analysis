@@ -25,7 +25,6 @@ reg = '^.*/AquaPose'
 project_root = re.findall(reg, osp.dirname(osp.abspath(sys.argv[0])))[0]
 sys.path.append(project_root)
 
-from lib.dataset.PoseDataset import PoseDataset
 
 from lib.models.keypoint_rcnn import get_resnet50_pretrained_model
 
