@@ -19,13 +19,15 @@ reg = '^.*/AquaPose'
 project_root = re.findall(reg, osp.dirname(osp.abspath(sys.argv[0])))[0]
 sys.path.append(project_root)
 
+from lib.utils.visual_utils import get_max_prediction
+
 # references import
 # source: https://github.com/pytorch/vision/tree/master/references/detection
 from references.transforms import RandomHorizontalFlip, ToTensor, Compose
 
 class CycleDataset(Dataset):
     
-    def __init__(self, dataset_list, stride=1, max_dist=30):
+    def __init__(self, dataset_list, stride=1, max_dist=30, cache_predictions = False):
         '''
         dataset_list = contains all relevant datasets with subfolders ann and img as produced by supervise.ly
         stride = how densely the images are annotated, one every stride is annotated
@@ -72,6 +74,11 @@ class CycleDataset(Dataset):
                         cur_phase = None
 
         self.transform = Compose([ToTensor()])
+
+        # cache predictions
+        if cache_predictions:
+            self.prediction_cache = [None] * len(self.items)
+
 
     def __len__(self):
         return len(self.items)
@@ -133,3 +140,35 @@ class CycleDataset(Dataset):
             image, _ = self.transform(image, None)
 
         return image, item_dict
+
+
+    
+    def predict(self, model, idx):
+
+        # get model device (by looking a random layer's weights)
+        device = model.backbone.body.conv1.weight.device
+
+        # if predictions are cached and a prediction is present then return it
+        if self.prediction_cache and self.prediction_cache[idx] is not None:
+            return self.prediction_cache[idx]
+        
+        # get img tensor
+        img, _ = self[idx]
+
+        # load image onto device
+        img = img.to(device)
+
+        # make prediction
+        prediction = model([img])
+        
+        # convert image and prediction to host memory
+        prediction = [{k: v.cpu() for k, v in t.items()} for t in prediction]
+        img.cpu()
+        
+        pred_box, pred_kps, pred_scores = get_max_prediction(prediction)
+
+        # store in cache
+        if self.prediction_cache:
+            self.prediction_cache[idx] = [pred_box, pred_kps, pred_scores]
+
+        return pred_box, pred_kps, pred_scores
