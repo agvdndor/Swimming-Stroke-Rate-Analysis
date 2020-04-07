@@ -43,7 +43,7 @@ from references.transforms import RandomHorizontalFlip
 from lib.utils.visual_utils import *
 
 T_WEIGHTS = np.array([10, 8, 8, 3, 3, 1, 1, 15, 15, 3, 3, 1, 1])
-KP_WEIGHTS = np.array([3, 3, 3, 6, 6, 10, 10, 3, 3, 2, 2, 1, 1])
+KP_WEIGHTS = np.array([3, 3, 3, 6, 6, 10, 10, 3, 3, 2, 2, 0.1, 0.1])
 
 
 def merge_head(kps):
@@ -636,6 +636,7 @@ def warp_anchor_on_pred(model, inference_dataset, inference_id, anchor_dataset, 
 
     if len(filter_ind) == 0:
         #plot_image_with_kps(inf_img, [pred_kps_merged[pred_scores_merged > 0]], ['r'])
+        ax = get_image_with_kps_skeleton(inference_dataset[inference_id][0], [anchor_kps], filter_ind=filter_ind)
         return ref_kps_np
     
     translat_weights = T_WEIGHTS
@@ -683,5 +684,14 @@ def warp_anchor_on_pred(model, inference_dataset, inference_id, anchor_dataset, 
 
     # only upper body
     filter_ind = np.intersect1d(filter_ind, [0,1,2,3,4,5,6,7,8])
-    plot_image_with_kps(inference_dataset[inference_id][0], [pred_kps_merged[pred_scores_merged > 0]], ['r'])
-    return ref_rot_t
+    #plot_image_with_kps(inference_dataset[inference_id][0], [pred_kps_merged[pred_scores_merged > 0]], ['r'])
+
+    filter_ind = np.array([0,1,2,3,4,5,6,7,8])
+    # all lower body joints with positive probablity can be displayed as well
+    for i in range(9,13):
+        if pred_scores_merged[i] > 0:
+            filter_ind = np.append(filter_ind, i)
+            ref_rot_t[i][0] = pred_kps_np[i][0]
+            ref_rot_t[i][1] = pred_kps_np[i][1]
+    ax = get_image_with_kps_skeleton(inference_dataset[inference_id][0], [ref_rot_t], filter_ind=filter_ind)
+    return ref_rot_t, ax
