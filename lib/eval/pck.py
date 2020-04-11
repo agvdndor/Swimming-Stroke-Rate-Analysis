@@ -67,7 +67,7 @@ class pck:
         return res
 
 
-    def score_per_keypoint(self, thresholds=[0.1, 0.2, 0.3, 0.4, 0.5], min_score = - float('inf'), include_occluded=True):
+    def score_per_keypoint(self, thresholds=[0.1, 0.2, 0.3, 0.4, 0.5], min_score = - float('inf'), include_occluded=True, corrected=False):
         ds = self.ds_list[0]
 
         # keep track of how many were visible
@@ -78,16 +78,21 @@ class pck:
 
         for ds in self.ds_list:
             for idx, (_, target) in enumerate(tqdm(ds)):
-
+                if idx==0:
+                    continue
                 # get gt 
                 gt_kps = target['keypoints'][0].detach().numpy()
                 gt_kps = merge_head(gt_kps)
 
                 # get dt
-                _, pred_kps, pred_scores = ds.predict(model, idx)
-                dt_kps = merge_head(pred_kps)
-                dt_scores = merge_head(pred_scores)
-
+                if not corrected or ds.prediction_cache_corrected[idx] is None:
+                    _, pred_kps, pred_scores = ds.predict(model, idx, corrected=corrected)
+                    dt_kps = merge_head(pred_kps)
+                    dt_scores = merge_head(pred_scores)
+                else:
+                    dt_kps = ds.predict(model, idx, corrected=corrected)
+                    dt_scores = [1] * len(dt_kps)
+                
                 # get torso diameter
                 torso_dist = sqrt((gt_kps[1][0] - gt_kps[9][0])**2 + (gt_kps[1][1] - gt_kps[9][1])**2)
                 # if not then use torso from previous iteration, should be fine
@@ -108,7 +113,7 @@ class pck:
         return [[num / num_visible[joint] for num in res[joint]] for joint in range(0,13)]
 
 
-    def inversion_errors(self, thresholds=[0.1, 0.2, 0.3, 0.4, 0.5], inversion_pairs=[[1,2] , [3,4] , [5,6], [7,8] , [8,9], [10,11] , [11,12]], min_score = - float('inf')):
+    def inversion_errors(self, thresholds=[0.1, 0.2, 0.3, 0.4, 0.5], inversion_pairs=[[1,2] , [3,4] , [5,6], [7,8] , [8,9], [10,11] , [11,12]], min_score = - float('inf'), corrected=False):
         ds = self.ds_list[0]
 
         # keep track of how many were visible
@@ -125,9 +130,16 @@ class pck:
                 gt_kps = merge_head(gt_kps)
 
                 # get dt
-                _, pred_kps, pred_scores = ds.predict(model, idx)
-                dt_kps = merge_head(pred_kps)
-                dt_scores = merge_head(pred_scores)
+                if not corrected:
+                    _, pred_kps, pred_scores = ds.predict(model, idx, corrected=corrected)
+                    dt_kps = merge_head(pred_kps)
+                    dt_scores = merge_head(pred_scores)
+                else:
+                    if ds.prediction_cache_corrected[idx] is not None:
+                        dt_kps = ds.predict(model, idx, corrected=corrected)
+                        dt_scores = [1] * len(dt_kps)
+                    else:
+                        continue
 
                 # get torso diameter
                 torso_dist = sqrt((gt_kps[1][0] - gt_kps[9][0])**2 + (gt_kps[1][1] - gt_kps[9][1])**2)
