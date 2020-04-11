@@ -260,7 +260,7 @@ def get_most_similar_ind_and_scores(pred_kps, pred_scores, ref_dataset,
     flip = RandomHorizontalFlip(1.0)
 
     # go through all images of dataset to find best matches
-    for ref_id, (ref_img, ref_target) in tqdm(enumerate(ref_dataset)):
+    for ref_id, (ref_img, ref_target) in enumerate(ref_dataset):
         
         # get gt keypoint annotations
         ref_kps = ref_target['keypoints'][0].detach().numpy()

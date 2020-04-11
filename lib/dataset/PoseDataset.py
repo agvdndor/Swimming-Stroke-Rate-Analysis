@@ -94,6 +94,7 @@ class PoseDataset(Dataset):
         # cache predictions
         if cache_predictions:
             self.prediction_cache = [None] * len(self.ann_list)
+            self.prediction_cache_corrected = [None] * len(self.ann_list)
 
     def __len__(self):
         return len(self.ann_list)
@@ -276,13 +277,17 @@ class PoseDataset(Dataset):
         return image, target
 
 
-    def predict(self, model, idx):
+    def predict(self, model, idx, corrected=False):
 
         # get model device (by looking a random layer's weights)
         device = model.backbone.body.conv1.weight.device
 
         # if predictions are cached and a prediction is present then return it
         if self.prediction_cache and self.prediction_cache[idx] is not None:
+            if corrected and self.prediction_cache_corrected[idx] is not None:
+                return self.prediction_cache_corrected
+            elif corrected and self.prediction_cache_corrected[idx] is None:
+                print('Requested corrected pose, but none was cached. Returning uncorrected pose instead')
             return self.prediction_cache[idx]
         
         # get img tensor
@@ -342,6 +347,15 @@ class PoseDataset(Dataset):
 
         return target
 
+    
+    def get_image_name_to_index(self):
+        name_to_index = {}
+        for idx, (_,target) in enumerate(self):
+            image_id = target['image_id']
+            name_to_index[image_id] = idx
+
+        return name_to_index
+
 
     #########
     ## PCK ##
@@ -356,29 +370,5 @@ class PoseDataset(Dataset):
         for idx in tqdm(range(0, len(self))):
             self.predict(model, idx)
 
-    # return for prediction and gt the percentage of times it was visible (v=1) and for prediction v==1 and score > min_score
-    def num_kp_visible(self, model, min_score = 0):
-        res = {}
-        res['gt'] = [0] * self.num_joints
-        res['dt'] = [0] * self.num_joints
-
-        for idx, (_, target) in enumerate(tqdm(self)):
-            kps = target['keypoints'][0].detach().numpy()
-
-            kps_merged = merge_head(kps)
-
-            # get prediction (use cache)
-            _, pred_kps, pred_scores = self.prediction_cache(model, idx)
-            pred_kps = merge_head(pred_kps)
-            pred_scores = merge_head(pred_scores)
-
-            for joint in range(0,13):
-                # if visible
-                if kps[joint][2] > 0:
-                    res['gt'][joint] += 1
-
-                
-                    # if minimum score reached
-                    if pred_scores >= min_score:
-                        res['dt'][joint] += 1
-        return res
+    
+    
