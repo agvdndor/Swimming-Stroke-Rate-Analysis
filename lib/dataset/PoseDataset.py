@@ -351,7 +351,7 @@ class PoseDataset(Dataset):
     def get_image_name_to_index(self):
         name_to_index = {}
         for idx, (_,target) in enumerate(self):
-            image_id = target['image_id']
+            image_id = target['image_id'].detach().numpy()
             name_to_index[image_id] = idx
 
         return name_to_index
