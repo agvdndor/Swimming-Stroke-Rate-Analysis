@@ -285,7 +285,7 @@ class PoseDataset(Dataset):
         # if predictions are cached and a prediction is present then return it
         if self.prediction_cache and self.prediction_cache[idx] is not None:
             if corrected and self.prediction_cache_corrected[idx] is not None:
-                return self.prediction_cache_corrected
+                return self.prediction_cache_corrected[idx]
             elif corrected and self.prediction_cache_corrected[idx] is None:
                 print('Requested corrected pose, but none was cached. Returning uncorrected pose instead')
             return self.prediction_cache[idx]
@@ -351,7 +351,7 @@ class PoseDataset(Dataset):
     def get_image_name_to_index(self):
         name_to_index = {}
         for idx, (_,target) in enumerate(self):
-            image_id = target['image_id'].detach().numpy()
+            image_id = int(target['image_id'].detach().numpy())
             name_to_index[image_id] = idx
 
         return name_to_index
