@@ -21,6 +21,7 @@ project_root = re.findall(reg, osp.dirname(osp.abspath(sys.argv[0])))[0]
 sys.path.append(project_root)
 
 from lib.utils.visual_utils import *
+from lib.matching.matching import merge_head
 
 # references import
 # source: https://github.com/pytorch/vision/tree/master/references/detection
@@ -88,6 +89,7 @@ class PoseDataset(Dataset):
         self.ann_list = ann_list
         self.train = train
         self.transform = self.get_transforms()
+        self.num_joints = 13
 
         # cache predictions
         if cache_predictions:
@@ -305,7 +307,6 @@ class PoseDataset(Dataset):
         return pred_box, pred_kps, pred_scores
 
 
-
     def correct_orientation(self, target, not_annotated):
         # Determine orientation of swimmer and modify target appropriately
         keypoints = target['keypoints']
@@ -340,3 +341,44 @@ class PoseDataset(Dataset):
             target['keypoints'] = keypoints
 
         return target
+
+
+    #########
+    ## PCK ##
+    #########
+
+    # this is useful to cache all results and then evaluate metrics
+    def predict_all(self, model):
+        if not self.prediction_cache:
+            print('predict_all called but prediction cache not enabled')
+            return
+        
+        for idx in tqdm(range(0, len(self))):
+            self.predict(model, idx)
+
+    # return for prediction and gt the percentage of times it was visible (v=1) and for prediction v==1 and score > min_score
+    def num_kp_visible(self, model, min_score = 0):
+        res = {}
+        res['gt'] = [0] * self.num_joints
+        res['dt'] = [0] * self.num_joints
+
+        for idx, (_, target) in enumerate(tqdm(self)):
+            kps = target['keypoints'][0].detach().numpy()
+
+            kps_merged = merge_head(kps)
+
+            # get prediction (use cache)
+            _, pred_kps, pred_scores = self.prediction_cache(model, idx)
+            pred_kps = merge_head(pred_kps)
+            pred_scores = merge_head(pred_scores)
+
+            for joint in range(0,13):
+                # if visible
+                if kps[joint][2] > 0:
+                    res['gt'][joint] += 1
+
+                
+                    # if minimum score reached
+                    if pred_scores >= min_score:
+                        res['dt'][joint] += 1
+        return res
