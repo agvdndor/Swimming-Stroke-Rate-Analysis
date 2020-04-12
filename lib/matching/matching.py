@@ -595,7 +595,7 @@ def get_observation_likelihood(model, inference_dataset, anchor_dataset, max_str
         obslik_list += [obslik]
         flipped_list += [flipped_mat]
 
-    return np.array(obslik_list), np.array(observations_list), np.array(flipped_list)
+    return obslik_list, observations_list, flipped_list
 
 def build_transmat(num_states, probs=[.4,.5,.1]):
     transmat = np.zeros((num_states,num_states))
@@ -634,10 +634,6 @@ def warp_anchor_on_pred(model, inference_dataset, inference_id, anchor_dataset, 
             filter_lr_confusion = True
             )
 
-    if len(filter_ind) == 0:
-        #plot_image_with_kps(inf_img, [pred_kps_merged[pred_scores_merged > 0]], ['r'])
-        ax = get_image_with_kps_skeleton(inference_dataset[inference_id][0], [anchor_kps], filter_ind=filter_ind)
-        return ref_kps_np
     
     translat_weights = T_WEIGHTS
     
@@ -645,6 +641,12 @@ def warp_anchor_on_pred(model, inference_dataset, inference_id, anchor_dataset, 
     # the below code is copied from do_kabsch_tranform
     pred_kps_np = np.array(pred_kps_merged)
     ref_kps_np = np.array(anchor_kps_merged)
+
+
+    if len(filter_ind) == 0:
+        #plot_image_with_kps(inf_img, [pred_kps_merged[pred_scores_merged > 0]], ['r'])
+        ax = get_image_with_kps_skeleton(inference_dataset[inference_id][0], [anchor_kps], filter_ind=filter_ind)
+        return ref_kps_np, ax
 
     if translat_weights is None:
         translat_weights_np = np.array([1] * len(anchor_kps))
