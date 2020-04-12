@@ -49,7 +49,7 @@ class CycleDataset(Dataset):
         cur_offset = 0
 
         seq_start = 0
-        seq_end = None
+        seq_end = 0
 
         for dataset in dataset_list:
             for ann_file in sorted(glob(os.path.join(dataset, "ann_cycle", '*'))):
