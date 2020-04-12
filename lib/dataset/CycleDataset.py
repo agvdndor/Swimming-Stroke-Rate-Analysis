@@ -73,6 +73,10 @@ class CycleDataset(Dataset):
                         seq_end = len(self.items)
                         self.sequences.append([seq_start, seq_end])
                         cur_phase = None
+            if seq_end < len(self.items):
+                seq_end = len(self.items)
+                self.sequences.append([seq_start, seq_end])
+                cur_phase = None
 
         self.transform = Compose([ToTensor()])
 
