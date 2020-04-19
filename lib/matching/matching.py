@@ -539,7 +539,7 @@ def get_observation_likelihood_and_hidden_state(model, inference_dataset, anchor
     return np.array(img_ids_list), np.array(obslik_list), np.array(observations_list), np.array(hidden_states_list), np.array(flipped_list)
 
 # this can only handle cycle subsets now
-def get_observation_likelihood(model, inference_dataset, anchor_dataset, max_stride=1, device=None):
+def get_observation_likelihood(model, inference_dataset, anchor_dataset, max_stride=1, device=None, exponent=4.0):
     model.eval()
     cpu = torch.device('cpu')
     
@@ -579,7 +579,7 @@ def get_observation_likelihood(model, inference_dataset, anchor_dataset, max_str
             
             scores = np.array(scores)[np.argsort(best_ind)]
             flipped = np.array(flipped)[np.argsort(best_ind)]
-            scores = np.power(scores, np.array([4.0] * len(scores)))
+            scores = np.power(scores, np.array([exponent] * len(scores)))
             if np.sum(scores) > 0:
                 scores_norm = np.array(scores)/np.sum(np.array(scores))
             else:
