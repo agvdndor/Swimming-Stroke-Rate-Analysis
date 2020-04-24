@@ -67,7 +67,7 @@ class pck:
         return res
 
 
-    def score_per_keypoint(self, thresholds=[0.1, 0.2, 0.3, 0.4, 0.5], min_score = - float('inf'), include_occluded=True, corrected=False):
+    def score_per_keypoint(self, model, thresholds=[0.1, 0.2, 0.3, 0.4, 0.5], min_score = - float('inf'), include_occluded=True, corrected=False):
         ds = self.ds_list[0]
 
         # keep track of how many were visible
@@ -113,11 +113,11 @@ class pck:
         return [[num / num_visible[joint] for num in res[joint]] for joint in range(0,13)]
 
 
-    def inversion_errors(self, thresholds=[0.1, 0.2, 0.3, 0.4, 0.5], inversion_pairs=[[1,2] , [3,4] , [5,6], [7,8] , [8,9], [10,11] , [11,12]], min_score = - float('inf'), corrected=False):
+    def inversion_errors(self, model, thresholds=[0.1, 0.2, 0.3, 0.4, 0.5], inversion_pairs=[[1,2] , [3,4] , [5,6], [7,8] , [8,9], [10,11] , [11,12]], min_score = - float('inf'), corrected=False):
         ds = self.ds_list[0]
 
         # keep track of how many were visible
-        num_visible = [0] * ds.num_joints
+        num_visible = [[0 for t in thresholds] for i in range(0,ds.num_joints)]
 
         # init results for each joint, for each treshold
         res = [[0 for t in thresholds] for i in range(0,ds.num_joints)]
@@ -156,7 +156,7 @@ class pck:
                                 sibling_joint = pair[joint % 2]
                                 break
 
-                        num_visible[joint] += 1
+                        
 
                         # get distance between dt and gt
                         dist = sqrt((gt_kps[joint][0] - dt_kps[joint][0])**2 + (gt_kps[joint][1] - dt_kps[joint][1])**2)
@@ -168,7 +168,9 @@ class pck:
                         for t_id, threshold in enumerate(thresholds):
                             if dist > threshold * torso_dist and dist_sibling < threshold * torso_dist:
                                 res[joint][t_id] += 1
+                            if dist > threshold * torso_dist:
+                                num_visible[joint][t_id] += 1
         
         # avoid division by zero exception
-        num_visible[0] = 1
-        return [[num / num_visible[joint] for num in res[joint]] for joint in range(0,13)]
+        num_visible[0] = [1 for t in thresholds]
+        return [[num / max(1,num_vis) for num, num_vis in zip(res[joint], num_visible[joint])] for joint in range(0,13)]
