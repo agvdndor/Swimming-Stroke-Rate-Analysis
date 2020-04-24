@@ -91,6 +91,9 @@ def plot_image_with_kps_skeleton(img_tensor, kps_list, color_list=['b', 'r', 'g'
     for joint in skeleton:
         if joint[0] in filter_ind and joint[1] in filter_ind:
             plt.plot([kps[joint[0]][0], kps[joint[1]][0]], [kps[joint[0]][1], kps[joint[1]][1]], c=clr)
+    plt.axis('off')
+    plt.grid(b=None)
+    plt.show()
 
 def get_image_with_kps_skeleton(img_tensor, kps_list, color_list=['b', 'r', 'g'], filter_ind=[x for x in range(0,13)], skeleton=[[1,2], [1,3],[3,5], [2,4],[4,6], [1,7], [2,8],[7,8],[7,9],[9,11],[8,10],[10,12]]):
     #fig, ax = plt.subplots()
@@ -101,4 +104,6 @@ def get_image_with_kps_skeleton(img_tensor, kps_list, color_list=['b', 'r', 'g']
     for joint in skeleton:
         if joint[0] in filter_ind and joint[1] in filter_ind:
             plt.plot([kps[joint[0]][0], kps[joint[1]][0]], [kps[joint[0]][1], kps[joint[1]][1]], c=clr)
+    plt.axis('off')
+    plt.grid(b=None)
     return ax
