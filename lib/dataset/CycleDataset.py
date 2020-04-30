@@ -43,6 +43,9 @@ class CycleDataset(Dataset):
         # hold start and end index of sequence (end exlucsive)
         self.sequences = []
 
+        self.obs = []
+        self.mls = []
+
         # hold pairs of img filename and target
         self.items = []
 
