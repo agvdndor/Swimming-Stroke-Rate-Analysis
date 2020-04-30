@@ -12,6 +12,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 from glob import glob
 import json
+from statistics import mean
 
 # get root directory
 import re
@@ -27,7 +28,7 @@ from references.transforms import RandomHorizontalFlip, ToTensor, Compose
 
 class CycleDataset(Dataset):
     
-    def __init__(self, dataset_list, stride=1, max_dist=30, cache_predictions = False):
+    def __init__(self, dataset_list, stride=1, max_dist=30, cache_predictions = False, break_at_turn=True):
         '''
         dataset_list = contains all relevant datasets with subfolders ann and img as produced by supervise.ly
         stride = how densely the images are annotated, one every stride is annotated
@@ -68,7 +69,7 @@ class CycleDataset(Dataset):
 
                     cur_offset += 1
 
-                    if cur_offset > max_dist:
+                    if cur_offset > max_dist or (break_at_turn and CycleDataset.is_turn(ann_file)):
                         seq_end = len(self.items)
                         self.sequences.append([seq_start, seq_end])
                         cur_phase = None
@@ -95,6 +96,14 @@ class CycleDataset(Dataset):
             return len(ann['tags']) > 0
     
     @staticmethod
+    def is_turn(ann_file):
+        with open(ann_file) as file:
+            ann = json.load(file)
+
+            if len(ann['tags']) > 0:
+                return ann['tags'][0]['name'] == 'turn'
+    
+    @staticmethod
     def get_phase(ann_file):
         with open(ann_file) as file:
             ann = json.load(file)
@@ -108,24 +117,34 @@ class CycleDataset(Dataset):
         # delete .json extension
         return ann_file.split('.json')[0]
 
-    def get_mean_stroke_rate(self):
-        cur_phase = None
-        num_phases = -1
-        num_frames = 0
-        num_frames_in_phase = 0 
-        for item in self.items:
-            item_phase = self.phases[item['phase']]
-            if item_phase != cur_phase:
-                cur_phase = item_phase
-                num_phases += 1
-                num_frames += num_frames_in_phase
-                num_frames_in_phase = 0
-            num_frames_in_phase += 1
+    def get_mean_stroke_rate(self, fps_list):
+        phase_durations = self.get_phase_durations(fps_list)
+
+        flatten = lambda l: [item for sublist in l for item in sublist]
+        phase_durations = flatten(phase_durations)
+
+        mean_stroke_duration = mean(phase_durations) * 2
+
+        return 60.0 / mean_stroke_duration
+
+    # in seconds
+    def get_phase_durations(self, fps_list):
+        # return per sequence a list with half stroke (1 phase) durations
+        phase_durations = []
+        for seq, fps in zip(self.sequences, fps_list):
+            seq_phase_durations = []
+            num_frames = 1
+            for item_id in range(seq[0]  + 1, seq[1]):
+                if self.items[item_id]['offset'] == 0:
+                    seq_phase_durations.append(num_frames / fps)
+                    num_frames = 1
+                else:
+                    num_frames += 1
+            phase_durations.append(seq_phase_durations)
         
-        # strokes per minute
-        rate = num_phases / (2 * num_frames) * 25 * 60
- 
-        return rate
+        return phase_durations
+
+
 
 
     def __getitem__(self, idx):
