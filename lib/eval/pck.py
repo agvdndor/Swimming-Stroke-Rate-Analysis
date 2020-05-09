@@ -113,7 +113,7 @@ class pck:
         return [[num / num_visible[joint] for num in res[joint]] for joint in range(0,13)]
 
 
-    def inversion_errors(self, model, thresholds=[0.1, 0.2, 0.3, 0.4, 0.5], inversion_pairs=[[1,2] , [3,4] , [5,6], [7,8] , [8,9], [10,11] , [11,12]], min_score = - float('inf'), corrected=False):
+    def inversion_errors(self, model, thresholds=[0.1, 0.2, 0.3, 0.4, 0.5], inversion_pairs=[[1,2] , [3,4] , [5,6], [7,8] , [9,10], [11,12]], min_score = - float('inf'), corrected=False):
         ds = self.ds_list[0]
 
         # keep track of how many were visible
