@@ -691,7 +691,7 @@ def warp_anchor_on_pred(model, inference_dataset, inference_id, anchor_dataset, 
     filter_ind = np.array([0,1,2,3,4,5,6,7,8])
     # all lower body joints with positive probablity can be displayed as well
     for i in range(9,13):
-        if pred_scores_merged[i] > 0:
+        if pred_scores_merged[i] > - float('inf'):
             filter_ind = np.append(filter_ind, i)
             ref_rot_t[i][0] = pred_kps_np[i][0]
             ref_rot_t[i][1] = pred_kps_np[i][1]
