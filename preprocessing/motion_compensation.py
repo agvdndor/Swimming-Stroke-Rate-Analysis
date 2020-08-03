@@ -8,7 +8,8 @@ import os
 import csv
 
 #global
-bg_subtractor = cv2.createBackgroundSubtractorKNN()
+#bg_subtractor = cv2.createBackgroundSubtractorKNN()
+bg_subtractor = cv2.createBackgroundSubtractorMOG2()
 v1_min, v2_min, v3_min, v1_max, v2_max, v3_max = 0,0,0,80,120,255
 
 #number of frames during warmup period
@@ -159,12 +160,23 @@ def main():
             skip = False
         if frame_iter % 100== 0:
             print('frame index: ', frame_iter)
+
+        cv2.imshow('frame', resize_with_aspect_ratio(frame, width=1280))
+        
         foreground = get_foreground(frame)
         color_mask = get_color_mask(frame)
         #print('1')
         mask = apply_mask(color_mask, foreground)
         mask = apply_mask(mask, roi)
         #print('2')
+
+        # display fg and color
+        fg_resized =  resize_with_aspect_ratio(foreground, width=1280)
+        color_resized = resize_with_aspect_ratio(color_mask, width=1280)
+        cv2.imshow('foreground', fg_resized)
+        cv2.imshow('color', color_resized)
+
+
         # apply mask to frame
         frame_processed = cv2.bitwise_and(frame,frame,mask=mask)
         frame_processed = erode_and_dilate(frame_processed)
@@ -220,6 +232,7 @@ def main():
             if args['debug']:
                 cv2.imshow('processed', frame_processed)
                 cv2.imshow('og_frame', frame_w_rectangle)
+                
                 # wait for input
                 c = cv2.waitKey(0)
                 if 'q' == chr(c & 255):
