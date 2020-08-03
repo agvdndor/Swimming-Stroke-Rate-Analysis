@@ -68,11 +68,11 @@ Advances in the field of human pose estimation have significantly improved perfo
 ### Framework
 The proposed framework consists of 3 main steps
 - **Baseline Prediction:** Estimation of 13 keypoints by an existing human pose estimation model (preferrably finetuned on relevant dataset).
-  <img src="assets/images/dataset_format.png">
+  <img src="assets/images/dataset_format.PNG">
 
 - **Pose Matching:** Match the estimated pose to the most similar pose from a set of anchor poses. 
 
-  <img src="assets/images/matching_outline.png">
+  <img src="assets/images/matching_outline.PNG">
 
 - **Most Likely Sequence of Anchor Poses:** Use the Viterbi algorithm to obtain the most likely sequence of anchor poses given a series of consecutive pose predictions.
 
