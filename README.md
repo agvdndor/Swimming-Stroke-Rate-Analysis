@@ -69,7 +69,7 @@ The proposed framework consists of 3 main steps
 - **Baseline Prediction:** Estimation of 13 keypoints by an existing human pose estimation model (prefe rably finetuned on relevant dataset).
 
   <p align="center">
-    <img src="assets/images/dataset_format.png">
+    <img src="assets/images/dataset_format.PNG">
     <img src="assets/gifs/no_matching_trimmed.gif">
   </p>
   
@@ -78,7 +78,7 @@ The proposed framework consists of 3 main steps
 
 
   <p align="center">
-    <img src="assets/images/matching_outline.png">
+    <img src="assets/images/matching_outline.PNG">
     <img src="assets/gifs/only_matching_trimmed.gif">
   </p>
 
