@@ -28,9 +28,9 @@
     Automatically mine stroke rates from underwater video of swimmers over varying windows of time resolution.
     <br />
     <br />
-    <a href="https://github.com/othneildrew/Best-README-Template/issues">Report Bug</a>
+    <a href="https://github.com/agvdndor/Swimming-Stroke-Rate-Analysis">Report Bug</a>
     ·
-    <a href="https://github.com/othneildrew/Best-README-Template/issues">Request Feature</a>
+    <a href="https://github.com/agvdndor/Swimming-Stroke-Rate-Analysis">Request Feature</a>
   </p>
 </p>
 
@@ -56,20 +56,27 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
-
-There are many great README templates available on GitHub, however, I didn't find one that really suit my needs so I created this enhanced one. I want to create a README template so amazing that it'll be the last one you ever need.
-
-Here's why:
-* Your time should be focused on creating something amazing. A project that solves a problem and helps others
-* You shouldn't be doing the same tasks over and over like creating a README from scratch
-* You should element DRY principles to the rest of your life :smile:
-
-Of course, no one template will serve all projects since your needs may be different. So I'll be adding more in the near future. You may also suggest changes by forking this repo and creating a pull request or opening an issue.
-
-A list of commonly used resources that I find helpful are listed in the acknowledgements.
+This project was realized as a thesis to obtain a Master of Engineering in Computer Science at Ghent University. For a comprehensive explanation of methods and results, please consult the [academic summary](assets/pdf/academic_summary.pdf).
 
 
+
+### Abstract
+Advances in the field of human pose estimation have significantly improved performance across complex datasets. However, current solutions that were designed and trained to recognize the human body across a wide range of contexts, e.g. MS COCO, often do not reach their full potential in very specific and challenging environments. This impedes subsequent analysis of the results. Underwater footage of competitive swimmers is an example of this, due to frequent self-occlusion of body parts and the presence of noise in the water. This work aims to improve the performance of pose estimation in this context in order to enable an automatic analysis of kinematics. Therefore, we propose a framework that limits the search space for human pose estimation by using a set of anchor poses. More specifically, the problem is reduced to finding the best matching anchor pose and the optimal transformation thereof.
+	To find this best match, we devise a method of assessing similarity between two poses and use the Viterbi algorithm to find the most likely sequence of anchor poses. Thereby, we effectively exploit the cyclic character of the swimming motion.
+	This does not only improve pose estimation performance but also provides a method to reliably extract the stroke frequency, outperforming manual timings by a human observer.
+
+### Framework
+The proposed framework consists of 3 main steps
+- **Baseline Prediction:** Estimation of 13 keypoints by an existing human pose estimation model (preferrably finetuned on relevant dataset).
+  <img src="assets/images/dataset_format.png">
+
+- **Pose Matching:** Match the estimated pose to the most similar pose from a set of anchor poses. 
+
+  <img src="assets/images/matching_outline.png">
+
+- **Most Likely Sequence of Anchor Poses:** Use the Viterbi algorithm to obtain the most likely sequence of anchor poses given a series of consecutive pose predictions.
+
+  <img src="assets/images/outline.png">
 <!-- GETTING STARTED -->
 ## Getting Started
 
