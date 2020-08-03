@@ -40,15 +40,14 @@
 ## Table of Contents
 
 * [About the Project](#about-the-project)
-  * [Built With](#built-with)
+  * [Abstract](#Abstract)
+  * [Framework](#Framework)
+  * [Results](#Results)
 * [Getting Started](#getting-started)
   * [Prerequisites](#prerequisites)
   * [Installation](#installation)
-* [Usage](#usage)
-* [Roadmap](#roadmap)
-* [Contributing](#contributing)
+  * [Dataset](#Dataset)
 * [License](#license)
-* [Contact](#contact)
 * [Acknowledgements](#acknowledgements)
 
 
@@ -67,66 +66,75 @@ Advances in the field of human pose estimation have significantly improved perfo
 
 ### Framework
 The proposed framework consists of 3 main steps
-- **Baseline Prediction:** Estimation of 13 keypoints by an existing human pose estimation model (preferrably finetuned on relevant dataset).
-  <img src="assets/images/dataset_format.png">
+- **Baseline Prediction:** Estimation of 13 keypoints by an existing human pose estimation model (prefe rably finetuned on relevant dataset).
+
+  <p align="center">
+    <img src="assets/images/dataset_format.png">
+    <img src="assets/gifs/no_matching_trimmed.gif">
+  </p>
+  
 
 - **Pose Matching:** Match the estimated pose to the most similar pose from a set of anchor poses. 
 
-  <img src="assets/images/matching_outline.png">
+
+  <p align="center">
+    <img src="assets/images/matching_outline.png">
+    <img src="assets/gifs/only_matching_trimmed.gif">
+  </p>
 
 - **Most Likely Sequence of Anchor Poses:** Use the Viterbi algorithm to obtain the most likely sequence of anchor poses given a series of consecutive pose predictions.
 
-  <img src="assets/images/outline.png">
+  
+  <p align="center">
+    <img src="assets/images/outline.png">
+    <img src="assets/gifs/mls_trimmed.gif">
+  </p>
+
+### Results
+  <p align="center">
+    <img src="assets/images/pck_inversion_results.png">
+  </p>
+
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
-
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-* npm
-```sh
-npm install npm@latest -g
-```
+- Python3.6+
+- Pip
+- Virtualenv
+- cuDNN7.+
+- Docker (optional)
 
 ### Installation
 
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
+1. Create environment and activate (Linux/Mac)
 ```sh
-git clone https://github.com/your_username_/Project-Name.git
+virtualenv -p python3 venv
+source venv/bin/activate
 ```
-3. Install NPM packages
+2. Install requirements
 ```sh
-npm install
-```
-4. Enter your API in `config.js`
-```JS
-const API_KEY = 'ENTER YOUR API';
+pip install -r requirements.txt
 ```
 
+### Dataset
+Dataset was annotated with [Supervise.ly](supervise.ly) and exported as JSON. Take a look at [lib/dataset/PoseDataset.py](https://github.com/agvdndor/Swimming-Stroke-Rate-Analysis/blob/master/lib/dataset/PoseDataset.py) for format and naming conventions.
 
 <!-- LICENSE -->
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License.
 
 
-
-<!-- CONTACT -->
-## Contact
-
-Your Name - [@your_twitter](https://twitter.com/your_username) - email@example.com
-
-Project Link: [https://github.com/your_username/repo_name](https://github.com/your_username/repo_name)
 
 
 
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgements
-* [GitHub Emoji Cheat Sheet](https://www.webpagefx.com/tools/emoji-cheat-sheet)
+Please review the [academic summary](assets/pdf/academic_summary.pdf) for a full list of references and acknowledgements.
+
+* [RMSD](https://github.com/charnley/rmsd)
 
 
 
@@ -138,7 +146,7 @@ Project Link: [https://github.com/your_username/repo_name](https://github.com/yo
 [forks-url]: https://github.com/agvdndor/Swimming-Stroke-Rate-Analysis/network/members
 [stars-shield]: https://img.shields.io/github/stars/agvdndor/Swimming-Stroke-Rate-Analysis.svg?style=flat-square
 [stars-url]: https://github.com/agvdndor/Swimming-Stroke-Rate-Analysis/stargazers
-[issues-shield]: https://img.shields.io/github/issues/othneildrew/Best-README-Template.svg?style=flat-square
+[issues-shield]: https://img.shields.io/github/issues/agvdndor/Swimming-Stroke-Rate-Analysis.svg?style=flat-square
 [issues-url]: https://github.com/agvdndor/Swimming-Stroke-Rate-Analysis/issues
 [license-shield]: https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=flat-square
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
